@@ -31,6 +31,7 @@ import java.util.function.BiPredicate
 import java.util.function.Function
 import java.util.function.Predicate
 import kotlin.concurrent.Volatile
+import kotlin.jvm.java
 
 private val LOG: Logger = logger<ExtensionPointImpl<*>>()
 

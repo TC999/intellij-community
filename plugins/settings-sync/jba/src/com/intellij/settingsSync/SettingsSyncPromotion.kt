@@ -11,8 +11,8 @@ import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.registry.Registry
 import com.intellij.settingsSync.auth.SettingsSyncAuthService
+import com.intellij.settingsSync.communicator.RemoteCommunicatorHolder
 import com.intellij.settingsSync.statistics.SettingsSyncEventsStatistics
-import com.intellij.settingsSync.statistics.SettingsSyncEventsStatistics.PromotionInSettingsEvent
 import com.intellij.ui.GotItTooltip
 import com.intellij.ui.treeStructure.SimpleNode
 import com.intellij.ui.treeStructure.filtered.FilteringTreeStructure
@@ -27,8 +27,8 @@ class SettingsSyncPromotion : SettingsDialogListener {
   override fun afterApply(settingsEditor: AbstractEditor) {
     if (settingsEditor !is SettingsEditor
         || SettingsSyncSettings.getInstance().syncEnabled
-        || SettingsSyncAuthService.getInstance().isLoggedIn()
-        || !Registry.`is`("settingsSync.promotion.in.settings", false)) {
+        || RemoteCommunicatorHolder.getAuthService().isLoggedIn()
+        || !Registry.Companion.`is`("settingsSync.promotion.in.settings", false)) {
       return
     }
 
@@ -55,13 +55,13 @@ class SettingsSyncPromotion : SettingsDialogListener {
       .withHeader(SettingsSyncBundle.message("promotion.in.settings.header"))
       .withButtonLabel(SettingsSyncBundle.message("promotion.in.settings.open"))
       .withSecondaryButton(SettingsSyncBundle.message("promotion.in.settings.skip")) {
-        SettingsSyncEventsStatistics.PROMOTION_IN_SETTINGS.log(PromotionInSettingsEvent.SKIP)
+        SettingsSyncEventsStatistics.PROMOTION_IN_SETTINGS.log(SettingsSyncEventsStatistics.PromotionInSettingsEvent.SKIP)
       }
       .withGotItButtonAction {
         invokeLater(ModalityState.stateForComponent(settingsEditor)) {
           settingsEditor.select(settingsSyncConfigurable)
         }
-        SettingsSyncEventsStatistics.PROMOTION_IN_SETTINGS.log(PromotionInSettingsEvent.GO_TO_SETTINGS_SYNC)
+        SettingsSyncEventsStatistics.PROMOTION_IN_SETTINGS.log(SettingsSyncEventsStatistics.PromotionInSettingsEvent.GO_TO_SETTINGS_SYNC)
       }
       .withPosition(Balloon.Position.atRight)
       .show(settingsTree) { _, _ ->
@@ -70,18 +70,18 @@ class SettingsSyncPromotion : SettingsDialogListener {
         Point(x, pathBounds.y + pathBounds.height / 2)
       }
 
-    SettingsSyncEventsStatistics.PROMOTION_IN_SETTINGS.log(PromotionInSettingsEvent.SHOWN)
+    SettingsSyncEventsStatistics.PROMOTION_IN_SETTINGS.log(SettingsSyncEventsStatistics.PromotionInSettingsEvent.SHOWN)
 
     SettingsSyncEvents.getInstance().addListener(object : SettingsSyncEventListener {
       override fun loginStateChanged() {
-        if (SettingsSyncAuthService.getInstance().isLoggedIn()) {
-          SettingsSyncEventsStatistics.PROMOTION_IN_SETTINGS.log(PromotionInSettingsEvent.LOGGED_IN)
+        if (RemoteCommunicatorHolder.getAuthService().isLoggedIn()) {
+          SettingsSyncEventsStatistics.PROMOTION_IN_SETTINGS.log(SettingsSyncEventsStatistics.PromotionInSettingsEvent.LOGGED_IN)
         }
       }
 
       override fun enabledStateChanged(syncEnabled: Boolean) {
         if (syncEnabled) {
-          SettingsSyncEventsStatistics.PROMOTION_IN_SETTINGS.log(PromotionInSettingsEvent.ENABLED)
+          SettingsSyncEventsStatistics.PROMOTION_IN_SETTINGS.log(SettingsSyncEventsStatistics.PromotionInSettingsEvent.ENABLED)
           SettingsSyncEvents.getInstance().removeListener(this)
         }
       }

@@ -1,15 +1,31 @@
-package com.intellij.settingsSync
+package com.intellij.settingsSync.jba
 
 import com.intellij.ide.plugins.PluginManagerCore.isRunningFromSources
 import com.intellij.openapi.application.ApplicationNamesInfo
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.util.JDOMUtil
 import com.intellij.openapi.util.io.FileUtil
-import com.intellij.settingsSync.auth.SettingsSyncAuthService
+import com.intellij.settingsSync.CROSS_IDE_SYNC_MARKER_FILE
+import com.intellij.settingsSync.SETTINGS_SYNC_SNAPSHOT
+import com.intellij.settingsSync.SETTINGS_SYNC_SNAPSHOT_ZIP
+import com.intellij.settingsSync.ServerState
+import com.intellij.settingsSync.SettingsSnapshot
+import com.intellij.settingsSync.SettingsSnapshotZipSerializer
+import com.intellij.settingsSync.SettingsSyncEventListener
+import com.intellij.settingsSync.SettingsSyncEvents
+import com.intellij.settingsSync.SettingsSyncLocalSettings
+import com.intellij.settingsSync.SettingsSyncPushResult
+import com.intellij.settingsSync.SettingsSyncRemoteCommunicator
+import com.intellij.settingsSync.SettingsSyncSettings
+import com.intellij.settingsSync.UpdateResult
+import com.intellij.settingsSync.jba.auth.JBAAuthService
 import com.intellij.util.concurrency.SynchronizedClearableLazy
 import com.intellij.util.io.HttpRequests
 import com.intellij.util.io.delete
-import com.jetbrains.cloudconfig.*
+import com.jetbrains.cloudconfig.CloudConfigFileClientV2
+import com.jetbrains.cloudconfig.Configuration
+import com.jetbrains.cloudconfig.ETagStorage
+import com.jetbrains.cloudconfig.FileVersionInfo
 import com.jetbrains.cloudconfig.auth.JbaJwtTokenAuthProvider
 import com.jetbrains.cloudconfig.exception.InvalidVersionIdException
 import com.jetbrains.cloudconfig.exception.UnauthorizedException
@@ -18,18 +34,15 @@ import org.jetbrains.annotations.VisibleForTesting
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.InputStream
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.io.path.inputStream
-
-internal const val CROSS_IDE_SYNC_MARKER_FILE = "cross-ide-sync-enabled"
-internal const val SETTINGS_SYNC_SNAPSHOT = "settings.sync.snapshot"
-internal const val SETTINGS_SYNC_SNAPSHOT_ZIP = "$SETTINGS_SYNC_SNAPSHOT.zip"
 
 private const val CONNECTION_TIMEOUT_MS = 10000
 private const val READ_TIMEOUT_MS = 50000
 
-internal open class CloudConfigServerCommunicator(serverUrl: String? = null) : SettingsSyncRemoteCommunicator {
+internal open class CloudConfigServerCommunicator(serverUrl: String? = null,
+  private val jbaAuthService: JBAAuthService) : SettingsSyncRemoteCommunicator {
 
   protected val clientVersionContext = CloudConfigVersionContext()
 
@@ -264,7 +277,9 @@ internal open class CloudConfigServerCommunicator(serverUrl: String? = null) : S
     }
     else if (e is UnauthorizedException) {
       if (idTokenInRequest != null) {
-        SettingsSyncAuthService.getInstance().invalidateJBA(idTokenInRequest)
+
+        // TODO: fix
+        //SettingsSyncAuthService.getInstance().invalidateJBA(idTokenInRequest)
       }
       SettingsSyncSettings.getInstance().syncEnabled = false
       LOG.warn("Got \"Unauthorized\" from Settings Sync server. Settings Sync will be disabled. Please login to JBA again")
@@ -319,7 +334,7 @@ internal open class CloudConfigServerCommunicator(serverUrl: String? = null) : S
 
   private fun createConfiguration(): Configuration {
     val configuration = Configuration().connectTimeout(CONNECTION_TIMEOUT_MS).readTimeout(READ_TIMEOUT_MS)
-    val idToken = SettingsSyncAuthService.getInstance().idToken
+    val idToken = jbaAuthService.idToken
     _currentIdTokenVar = idToken
     if (idToken == null) {
       LOG.warn("No idToken provided! Setting Sync will be disabled")
@@ -385,4 +400,8 @@ internal open class CloudConfigServerCommunicator(serverUrl: String? = null) : S
       }
     }
   }
+}
+
+internal fun enabledOrDisabled(value: Boolean?): String {
+  return if (value == null) "null" else if (value) "enabled" else "disabled"
 }

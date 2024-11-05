@@ -1,14 +1,16 @@
-package com.intellij.settingsSync.auth
+package com.intellij.settingsSync.jba.auth
 
 import com.intellij.openapi.application.ex.ApplicationManagerEx
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.settingsSync.SettingsSyncEvents
+import com.intellij.settingsSync.auth.SettingsSyncAuthService
+import com.intellij.settingsSync.communicator.SettingsSyncUserData
 import com.intellij.ui.JBAccountInfoService
 
-internal class SettingsSyncDefaultAuthService : SettingsSyncAuthService {
+internal class JBAAuthService : SettingsSyncAuthService {
 
   companion object {
-    private val LOG = logger<SettingsSyncDefaultAuthService>()
+    private val LOG = logger<JBAAuthService>()
   }
 
   @Volatile
@@ -22,44 +24,59 @@ internal class SettingsSyncDefaultAuthService : SettingsSyncAuthService {
     return token != null && token != invalidatedIdToken
   }
 
-  override fun getUserData(): JBAccountInfoService.JBAData? {
-    if (ApplicationManagerEx.isInIntegrationTest()) {
-      return DummyJBAccountInfoService.userData
+  override fun getUserData() = fromJBAData(
+      if (ApplicationManagerEx.isInIntegrationTest()) {
+        DummyJBAccountInfoService.userData
+      } else {
+        getAccountInfoService()?.userData
+      }
+    )
+
+  private fun fromJBAData(jbaData: JBAccountInfoService.JBAData?) : SettingsSyncUserData {
+    if (jbaData == null) {
+      return SettingsSyncUserData.EMPTY
+    } else {
+      return SettingsSyncUserData(
+        jbaData.id,
+        jbaData.email,
+        jbaData.loginName
+      )
     }
-    return getAccountInfoService()?.userData
   }
 
-  override val idToken: String?
+  val idToken: String?
     get() {
       val token = getAccountInfoService()?.idToken
       if (!isTokenValid(token)) return null
       return token
     }
+  override val providerCode: String
+    get() = "jba"
 
   override fun login() {
     if (!isLoggedIn()) {
       getAccountInfoService()?.invokeJBALogin(
         {
-          SettingsSyncEvents.getInstance().fireLoginStateChanged()
+          SettingsSyncEvents.Companion.getInstance().fireLoginStateChanged()
         },
         {
-          SettingsSyncEvents.getInstance().fireLoginStateChanged()
+          SettingsSyncEvents.Companion.getInstance().fireLoginStateChanged()
         })
     }
   }
 
   override fun isLoginAvailable(): Boolean = getAccountInfoService() != null
 
-  override fun invalidateJBA(idToken: String) {
+  fun invalidateJBA(idToken: String) {
     if (invalidatedIdToken == idToken) return
 
     LOG.warn("Invalidating JBA Token")
     invalidatedIdToken = idToken
-    SettingsSyncEvents.getInstance().fireLoginStateChanged()
+    SettingsSyncEvents.Companion.getInstance().fireLoginStateChanged()
   }
 
   // Extracted to simplify testing
-  override fun getAccountInfoService(): JBAccountInfoService? {
+  fun getAccountInfoService(): JBAccountInfoService? {
     if (ApplicationManagerEx.isInIntegrationTest() || System.getProperty("settings.sync.test.auth") == "true") {
       return DummyJBAccountInfoService
     }

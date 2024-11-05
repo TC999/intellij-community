@@ -43,6 +43,10 @@ class ExtensionPointName<T : Any>(name: @NonNls String) : BaseExtensionPointName
     fun <T : Any> create(name: @NonNls String): ExtensionPointName<T> = ExtensionPointName(name)
   }
 
+  init {
+    logger<ExtensionPointName<T>>().info("Created extension point '$name' in ${ExtensionPointName::class.java}")
+  }
+
   /**
    * Consider using [.getExtensionList].
    */
