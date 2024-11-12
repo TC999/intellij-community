@@ -4,6 +4,7 @@ package org.jetbrains.kotlin.idea.base.analysisApiPlatform
 import com.intellij.openapi.project.Project
 import com.intellij.psi.search.GlobalSearchScope
 import org.jetbrains.kotlin.analysis.api.platform.projectStructure.KotlinGlobalSearchScopeMerger
+import org.jetbrains.kotlin.analysis.api.platform.projectStructure.KotlinResolutionScopeEnlarger
 import org.jetbrains.kotlin.analysis.api.platform.projectStructure.KotlinResolutionScopeProvider
 import org.jetbrains.kotlin.analysis.api.projectStructure.*
 import org.jetbrains.kotlin.analysis.decompiler.psi.BuiltinsVirtualFileProvider
@@ -17,8 +18,8 @@ import org.jetbrains.kotlin.idea.base.util.minus
 
 @K1ModeProjectStructureApi
 internal class IdeKotlinByModulesResolutionScopeProvider(private val project: Project) : KotlinResolutionScopeProvider {
-    override fun getResolutionScope(module: KaModule): GlobalSearchScope {
-        val scope = when (module) {
+    override fun getResolutionScope(module: KaModule): GlobalSearchScope =
+        when (module) {
             is KaSourceModule -> {
                 @OptIn(K1ModeProjectStructureApi::class)
                 val moduleInfo = module.moduleInfo as ModuleSourceInfo
@@ -31,7 +32,7 @@ internal class IdeKotlinByModulesResolutionScopeProvider(private val project: Pr
             is KaDanglingFileModule -> {
                 val scopes = listOf(
                     module.file.fileScope(),
-                    getResolutionScope(module.contextModule)
+                    KotlinResolutionScopeEnlarger.getEnlargedResolutionScope(module.contextModule)
                 )
 
                 GlobalSearchScope.union(scopes)
@@ -49,13 +50,6 @@ internal class IdeKotlinByModulesResolutionScopeProvider(private val project: Pr
                 KotlinGlobalSearchScopeMerger.getInstance(project).union(allModules.map { it.contentScope })
             }
         }
-        return if (module is KtSourceModuleByModuleInfo) {
-            // remove dependency on `ModuleInfo` after KT-69980 is fixed
-            KotlinResolveScopeEnlarger.enlargeScope(scope, module.ideaModule, isTestScope = module.ideaModuleInfo is ModuleTestSourceInfo)
-        } else {
-            scope
-        }
-    }
 
     private fun adjustScope(baseScope: GlobalSearchScope, module: KaSourceModule): GlobalSearchScope {
         var scope = baseScope
