@@ -617,8 +617,6 @@ public class Py3TypeCheckerInspectionTest extends PyInspectionTestCase {
                    """);
   }
 
-
-  // test is broken, type variable in TypeIs is invariant, so TypeIs[B] and TypeIs[D] are not consistent
   public void testCallableWithTypeGuards4() {
     doTestByText("""
                    from typing import Any, Callable
@@ -635,8 +633,30 @@ public class Py3TypeCheckerInspectionTest extends PyInspectionTestCase {
                    
                    def is_str(x: Any) -> TypeIs[D]:
                       ...
-                   # should be error here! 
-                   foo(is_str)
+                   foo(<warning descr="Expected type '(Any) -> TypeIs[B]', got '(x: Any) -> TypeIs[D]' instead">is_str</warning>)
+                   """);
+  }
+
+  public void testTypeIsAndTypeGuardAreNotAssignableToEachOther() {
+    doTestByText("""
+                   from typing import Callable, TypeGuard, TypeIs
+                   
+                   def takes_typeguard(f: Callable[[object], TypeGuard[int]]) -> None:
+                       pass
+                   
+                   def takes_typeis(f: Callable[[object], TypeIs[int]]) -> None:
+                       pass
+                   
+                   def is_int_typeis(val: object) -> TypeIs[int]:
+                       return isinstance(val, int)
+                   
+                   def is_int_typeguard(val: object) -> TypeGuard[int]:
+                       return isinstance(val, int)
+                   
+                   takes_typeguard(is_int_typeguard)
+                   takes_typeguard(<warning descr="Expected type '(object) -> TypeGuard[int]', got '(val: object) -> TypeIs[int]' instead">is_int_typeis</warning>)
+                   takes_typeis(<warning descr="Expected type '(object) -> TypeIs[int]', got '(val: object) -> TypeGuard[int]' instead">is_int_typeguard</warning>)
+                   takes_typeis(is_int_typeis)
                    """);
   }
 
