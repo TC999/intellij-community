@@ -1717,6 +1717,11 @@ public abstract class HighLevelQuickFixTestGenerated extends AbstractHighLevelQu
             runTest("../../../idea/tests/testData/quickfix/modifiers/infixModifier.kt");
         }
 
+        @TestMetadata("infixModifierFixAll.kt")
+        public void testInfixModifierFixAll() throws Exception {
+            runTest("../../../idea/tests/testData/quickfix/modifiers/infixModifierFixAll.kt");
+        }
+
         @TestMetadata("kt10409.kt")
         public void testKt10409() throws Exception {
             runTest("../../../idea/tests/testData/quickfix/modifiers/kt10409.kt");
@@ -1855,6 +1860,11 @@ public abstract class HighLevelQuickFixTestGenerated extends AbstractHighLevelQu
         @TestMetadata("operatorModifierComponent.kt")
         public void testOperatorModifierComponent() throws Exception {
             runTest("../../../idea/tests/testData/quickfix/modifiers/operatorModifierComponent.kt");
+        }
+
+        @TestMetadata("operatorModifierFixAll.kt")
+        public void testOperatorModifierFixAll() throws Exception {
+            runTest("../../../idea/tests/testData/quickfix/modifiers/operatorModifierFixAll.kt");
         }
 
         @TestMetadata("operatorModifierGet.kt")
@@ -5213,6 +5223,55 @@ public abstract class HighLevelQuickFixTestGenerated extends AbstractHighLevelQu
     }
 
     @RunWith(JUnit3RunnerWithInners.class)
+    @TestMetadata("../../../idea/tests/testData/quickfix/typeMismatch/definitelyNonNullableTypes")
+    public static class DefinitelyNonNullableTypes extends AbstractHighLevelQuickFixTest {
+        @java.lang.Override
+        @org.jetbrains.annotations.NotNull
+        public final KotlinPluginMode getPluginMode() {
+            return KotlinPluginMode.K2;
+        }
+
+        private void runTest(String testDataFilePath) throws Exception {
+            KotlinTestUtils.runTest(this::doTest, this, testDataFilePath);
+        }
+
+        @TestMetadata("changeFunctionParameterType1.kt")
+        public void testChangeFunctionParameterType1() throws Exception {
+            runTest("../../../idea/tests/testData/quickfix/typeMismatch/definitelyNonNullableTypes/changeFunctionParameterType1.kt");
+        }
+
+        @TestMetadata("changeFunctionParameterType2.kt")
+        public void testChangeFunctionParameterType2() throws Exception {
+            runTest("../../../idea/tests/testData/quickfix/typeMismatch/definitelyNonNullableTypes/changeFunctionParameterType2.kt");
+        }
+
+        @TestMetadata("changePrimaryConstructorParameterType.kt")
+        public void testChangePrimaryConstructorParameterType() throws Exception {
+            runTest("../../../idea/tests/testData/quickfix/typeMismatch/definitelyNonNullableTypes/changePrimaryConstructorParameterType.kt");
+        }
+
+        @TestMetadata("changeVariableType1.kt")
+        public void testChangeVariableType1() throws Exception {
+            runTest("../../../idea/tests/testData/quickfix/typeMismatch/definitelyNonNullableTypes/changeVariableType1.kt");
+        }
+
+        @TestMetadata("changeVariableType2.kt")
+        public void testChangeVariableType2() throws Exception {
+            runTest("../../../idea/tests/testData/quickfix/typeMismatch/definitelyNonNullableTypes/changeVariableType2.kt");
+        }
+
+        @TestMetadata("explicitCast1.kt")
+        public void testExplicitCast1() throws Exception {
+            runTest("../../../idea/tests/testData/quickfix/typeMismatch/definitelyNonNullableTypes/explicitCast1.kt");
+        }
+
+        @TestMetadata("explicitCast2.kt")
+        public void testExplicitCast2() throws Exception {
+            runTest("../../../idea/tests/testData/quickfix/typeMismatch/definitelyNonNullableTypes/explicitCast2.kt");
+        }
+    }
+
+    @RunWith(JUnit3RunnerWithInners.class)
     @TestMetadata("../../../idea/tests/testData/quickfix/typeMismatch")
     public static class TypeMismatch extends AbstractHighLevelQuickFixTest {
         @java.lang.Override
@@ -5343,16 +5402,6 @@ public abstract class HighLevelQuickFixTestGenerated extends AbstractHighLevelQu
         @TestMetadata("changeReturnTypeWhenValueParameterListIsAbsent.kt")
         public void testChangeReturnTypeWhenValueParameterListIsAbsent() throws Exception {
             runTest("../../../idea/tests/testData/quickfix/typeMismatch/changeReturnTypeWhenValueParameterListIsAbsent.kt");
-        }
-
-        @TestMetadata("changeVariableType1.kt")
-        public void testChangeVariableType1() throws Exception {
-            runTest("../../../idea/tests/testData/quickfix/typeMismatch/changeVariableType1.kt");
-        }
-
-        @TestMetadata("changeVariableType2.kt")
-        public void testChangeVariableType2() throws Exception {
-            runTest("../../../idea/tests/testData/quickfix/typeMismatch/changeVariableType2.kt");
         }
 
         @TestMetadata("compareToTypeMismatch.kt")

@@ -376,7 +376,7 @@ private suspend fun createDistributionState(context: BuildContext): Distribution
     }
     context.notifyArtifactBuilt(providedModuleFile)
     if (productLayout.buildAllCompatiblePlugins) {
-      collectCompatiblePluginsToPublish(builtinModuleData = builtinModuleData, result = pluginsToPublish, context = context)
+      collectCompatiblePluginsToPublish(builtinModuleData = builtinModuleData, pluginsToPublish = pluginsToPublish, context = context)
       filterPluginsToPublish(plugins = pluginsToPublish, context = context)
 
       // update enabledPluginModules to reflect changes in pluginsToPublish - used for buildProjectArtifacts
@@ -634,6 +634,7 @@ private fun checkProductLayout(context: BuildContext) {
     checkBaseLayout(plugin, "'${plugin.mainModule}' plugin", context)
   }
   checkPlatformSpecificPluginResources(pluginLayouts = pluginLayouts, pluginModulesToPublish = layout.pluginModulesToPublish)
+  checkPluginModulesToPublish(context)
 }
 
 private fun checkBaseLayout(layout: BaseLayout, description: String, context: BuildContext) {
@@ -724,6 +725,29 @@ private fun checkPluginModules(pluginModules: Collection<String>?, fieldName: St
   check(unknownBundledPluginModules.isEmpty()) {
     "The following modules from $fieldName don't contain META-INF/plugin.xml file and aren't specified as optional plugin modules" +
     "in productProperties.productLayout.pluginLayouts: ${unknownBundledPluginModules.joinToString()}."
+  }
+}
+
+private fun checkPluginModulesToPublish(context: BuildContext) {
+  if (!context.productProperties.productLayout.buildAllCompatiblePlugins) return
+  if (context.pluginAutoPublishList.config.none()) return
+  val pluginModulesToPublish = context.productProperties.productLayout.pluginModulesToPublish
+  val misconfigured = pluginModulesToPublish.filterNot { pluginToPublish ->
+    val layout = context.productProperties.productLayout.pluginLayouts.singleOrNull {
+      it.mainModule == pluginToPublish
+    } ?: PluginLayout.plugin(pluginToPublish)
+    context.pluginAutoPublishList.test(layout)
+  }
+  val errorMessage = "productProperties.productLayout.pluginModulesToPublish should be empty " +
+                     "if productProperties.productLayout.buildAllCompatiblePlugins is set to true, " +
+                     "see the property docs"
+  check(misconfigured.none()) {
+    errorMessage + ".\n" +
+    "Also, productProperties.productLayout.pluginModulesToPublish contains modules " +
+    "that aren't included in ${context.pluginAutoPublishList}: $misconfigured"
+  }
+  check(pluginModulesToPublish.none()) {
+    "$errorMessage: $pluginModulesToPublish"
   }
 }
 
